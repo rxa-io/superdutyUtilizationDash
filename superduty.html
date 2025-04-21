@@ -1007,7 +1007,7 @@
                             </ResponsiveContainer>
                          </div>
                          <div className="chart-container">
-                            <h4 className="font-medium mb-2 text-center text-gray-600 dark:text-gray-400">Top 5 Models by Avg Score</h4>
+                            <h4 className="font-medium mb-2 text-center text-gray-600 dark:text-gray-400">Superduty Models by Avg Score</h4>
                             <ResponsiveContainer width="100%" height={250}>
                                 <BarChart layout="vertical"
                                   data={aggregateByKey(data, 'vehicle_model', OVERALL_UTILIZATION_KEY).sort((a,b)=>b.value-a.value).slice(0,5)}
