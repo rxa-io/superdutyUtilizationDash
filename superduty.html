@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Ford Super Duty Strategic Utilization Insights</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/react-datepicker@4.8.0/dist/react-datepicker.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/react-datepicker@4.8.0/dist/react-datepicker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chrono-node/1.3.11/chrono.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.15.0/Recharts.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Base styles */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    .dark tbody tr:nth-child(even) { background: #1f2937; } /* Dark mode even rows */
+    thead th {
+      position: sticky; top: 0;
+      background: #e5e7eb; /* Light mode header */
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.75rem; /* Smaller header font */
+      padding: 8px 12px; /* Adjust padding */
+    }
+    .dark thead th {
+       background: #374151; /* Dark mode header */
+       color: #d1d5db;
+    }
+     td {
+        padding: 8px 12px; /* Consistent padding */
+        font-size: 0.875rem; /* text-sm */
+     }
+    /* Custom Chart Tooltip */
+    .recharts-tooltip-wrapper {
+      border-radius: 0.375rem; /* rounded-md */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: none !important;
+      pointer-events: none; /* Prevent tooltip flicker */
+    }
+    .recharts-default-tooltip {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      border: none !important;
+      color: #374151 !important; /* gray-700 */
+      border-radius: 0.375rem; /* rounded-md */
+      padding: 8px 12px !important;
+    }
+    .dark .recharts-default-tooltip {
+        background-color: rgba(31, 41, 55, 0.95) !important; /* dark:bg-gray-800 */
+        color: #f3f4f6 !important; /* dark:text-gray-100 */
+    }
+    .tooltip-label { font-weight: 600; margin-bottom: 4px; font-size: 0.875rem; }
+    .recharts-tooltip-item { font-size: 0.8rem; }
+
+
+    /* Executive Styling */
+    .kpi-card { transition: all 0.3s ease; }
+    .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .section-title {
+        border-bottom: 3px solid;
+        padding-bottom: 8px;
+        margin-bottom: 24px;
+        font-weight: 700;
+        font-size: 1.5rem; /* text-2xl */
+    }
+    .section-title-blue { border-color: #3B82F6; /* blue-500 */ }
+    .section-title-green { border-color: #10B981; /* green-500 */ }
+    .section-title-purple { border-color: #8B5CF6; /* purple-500 */ }
+    .section-title-orange { border-color: #F59E0B; /* amber-500 */ }
+    .section-title-teal { border-color: #14B8A6; /* teal-500 */}
+
+
+    /* Enhanced button styles */
+    .btn {
+      padding: 0.5rem 1rem; /* px-4 py-2 */
+      border-radius: 0.375rem; /* rounded-md */
+      font-weight: 600; /* font-semibold */
+      transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      border: 1px solid transparent;
+       cursor: pointer;
+    }
+    .btn:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    .btn-primary { background-color: #2563EB; color: white; } /* blue-600 */
+    .btn-primary:hover { background-color: #1D4ED8; } /* blue-700 */
+    .btn-secondary { background-color: #4B5563; color: white; } /* gray-600 */
+    .btn-secondary:hover { background-color: #374151; } /* gray-700 */
+    .btn-outline { background-color: transparent; color: #2563EB; border-color: #2563EB; } /* blue-600 */
+    .btn-outline:hover { background-color: #EFF6FF; } /* blue-50 */
+    .dark .btn-outline { color: #60A5FA; border-color: #60A5FA; } /* blue-400 */
+    .dark .btn-outline:hover { background-color: #1E40AF; } /* Adjust dark hover slightly */
+
+    /* Correlation Value Styling */
+     .correlation-value {
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+        font-size: 0.8rem; /* Slightly smaller font */
+        display: inline-block; /* Ensure background covers content */
+     }
+    .correlation-positive { background-color: #D1FAE5; color: #065F46; } /* green */
+    .correlation-negative { background-color: #FEE2E2; color: #991B1B; } /* red */
+    .correlation-neutral { background-color: #FEF3C7; color: #92400E; } /* amber */
+    .dark .correlation-positive { background-color: #064E3B; color: #A7F3D0; }
+    .dark .correlation-negative { background-color: #7F1D1D; color: #FECACA; }
+    .dark .correlation-neutral { background-color: #78350F; color: #FDE68A; }
+
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none; }
+      .print-section-break { page-break-before: always; }
+      .recharts-wrapper { width: 100% !important; height: auto !important; display: block !important; }
+      .recharts-surface { width: 100% !important; height: auto !important; }
+      .recharts-responsive-container { width: 100% !important; height: auto !important; aspect-ratio: 16 / 9; } /* Attempt aspect ratio */
+      .grid, .flex { display: block !important; } /* Simplify layout for printing */
+      .kpi-card, .chart-container { width: 90% !important; margin-bottom: 20px !important; box-shadow: none !important; border: 1px solid #ccc; } /* Adjust card/chart size */
+      section { border: none !important; box-shadow: none !important; padding: 10px !important; }
+      .bg-gradient-to-r { background: white !important; color: black !important; border: 1px solid #ccc;} /* Remove gradients */
+      .text-white { color: black !important; }
+      .text-blue-100 { color: #333 !important; }
+      .text-green-300, .text-red-300, .text-yellow-300 { font-weight: normal !important; }
+       .correlation-value { background-color: #eee !important; color: #333 !important; }
+    }
+
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+  <div id="root" class="container mx-auto p-6 lg:p-10"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, Fragment } = React;
+    const {
+      ResponsiveContainer, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, Sector, // Added PieChart etc.
+      XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend, ReferenceArea
+    } = Recharts;
+
+    // --- Configuration ---
+    const CSV_FILENAME = 'superd.csv'; // Make sure this file is in the same directory as HTML or served correctly
+    const REPORT_TITLE = 'Ford Super Duty: Strategic Utilization & Engagement Analysis';
+    const CHART_COLORS = {
+      primary: '#2563EB', // blue-600
+      secondary: '#10B981', // green-500
+      accent: '#F59E0B', // amber-500
+      neutral: '#6B7280', // gray-500
+      sourceLabel: '#3B82F6', // blue-500
+      consumerType: '#10B981', // green-500
+      mileage: '#EF4444', // red-500
+      modelYear: '#8B5CF6', // purple-500
+      topModels: '#F59E0B', // amber-500
+      purchaseIndex: '#EC4899', // pink-500
+      calendarYear: '#6366F1', // indigo-500
+      avgLine: 'rgba(0,0,0,0.6)', // Reference line color
+      darkAvgLine: 'rgba(255,255,255,0.6)',
+       // Palette for component contribution chart
+      componentPalette: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#aec7e8', '#ffbb78', '#98df8a'],
+    };
+    const PROVIDED_SCHEMA = [ // Keep schema definition as is
+        { name: 'consumer_id', type: 'string' }, { name: 'vehicle_model', type: 'string' },
+        { name: 'vehicle_model_year', type: 'string' }, { name: 'acquisition_date', type: 'object' },
+        { name: 'mileage_group2', type: 'string' }, { name: 'overall_utilization_score_at_acq', type: 'number' },
+        { name: 'utilization_score_ad_hoc_at_acq', type: 'number' }, { name: 'utilization_score_buy_at_acq', type: 'number' },
+        { name: 'utilization_score_buy_and_deliver_at_acq', type: 'number' }, { name: 'utilization_score_deliver_at_acq', type: 'number' },
+        { name: 'utilization_score_discover_and_shop_at_acq', type: 'number' }, { name: 'utilization_score_drive_and_service_at_acq', type: 'number' },
+        { name: 'utilization_score_ford_pass_rewards_at_acq', type: 'number' }, { name: 'utilization_score_integrated_services_at_acq', type: 'number' },
+        { name: 'utilization_score_lincoln_access_rewards_at_acq', type: 'number' }, { name: 'utilization_score_other_at_acq', type: 'number' },
+        { name: 'utilization_score_ownership_at_acq', type: 'number' }, { name: 'utilization_score_value_added_products_at_acq', type: 'number' },
+        { name: 'utilization_score_value_added_products_and_services_at_acq', type: 'number' }, { name: 'source_label', type: 'string' },
+        { name: 'Consumer_Type_Code_Desc', type: 'string' }
+    ];
+    const UTILIZATION_PREFIX = 'utilization_score_';
+    const OVERALL_UTILIZATION_KEY = 'overall_utilization_score_at_acq';
+
+    // --- Data Processing Functions ---
+    const maybeDate = s => { // (Keep maybeDate as is)
+      if (s instanceof Date && !isNaN(s)) return s;
+      if (typeof s !== 'string' || !s.trim()) return null;
+      let parsed = chrono.parseDate(s.trim());
+      if (!parsed || isNaN(parsed)) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s.trim()) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s.trim())) {
+          parsed = new Date(s.trim());
+        }
+      }
+      return (parsed && !isNaN(parsed)) ? parsed : null;
+    };
+
+
+    function processAndCleanData(rows) { // (Keep processAndCleanData as is)
+        const numCols = PROVIDED_SCHEMA.filter(c => c.type === 'number').map(c => c.name);
+        const dateCols = PROVIDED_SCHEMA.filter(c => c.type === 'object').map(c => c.name);
+        const utilCols = PROVIDED_SCHEMA.filter(c => c.name.startsWith(UTILIZATION_PREFIX)).map(c => c.name);
+        let processedCount = 0;
+        let validCount = 0;
+
+        const cleaned = rows.map((r, index) => {
+            processedCount++;
+            let o = {};
+            let hasRequiredFields = true;
+            try {
+                PROVIDED_SCHEMA.forEach(col => {
+                    let v = (r[col.name] === undefined || r[col.name] === null) ? '' : String(r[col.name]).trim();
+
+                    if (numCols.includes(col.name)) {
+                        const n = parseFloat(v);
+                        o[col.name] = (v === '' || v.toLowerCase() === 'null' || isNaN(n)) ? 0 : n;
+                    } else if (dateCols.includes(col.name)) {
+                        const d = maybeDate(v);
+                        o[col.name] = d;
+                        if (col.name === 'acquisition_date' && !d) {
+                            hasRequiredFields = false;
+                        }
+                    } else {
+                        o[col.name] = (v.toLowerCase() === 'null') ? '' : v;
+                    }
+                });
+
+                if (!o[OVERALL_UTILIZATION_KEY] || o[OVERALL_UTILIZATION_KEY] === 0) {
+                    o[OVERALL_UTILIZATION_KEY] = utilCols.reduce((s, k) => s + (o[k] || 0), 0);
+                }
+
+                if (o.source_label && (o.source_label.toLowerCase().includes('unknown') || o.source_label.trim() === '')) o.source_label = 'Unknown';
+                if (o.Consumer_Type_Code_Desc && (o.Consumer_Type_Code_Desc.toLowerCase().includes('unknown') || o.Consumer_Type_Code_Desc.trim() === '')) o.Consumer_Type_Code_Desc = 'Unknown';
+                if (o.mileage_group2 && o.mileage_group2.trim() === '') o.mileage_group2 = 'Unknown';
+
+                if (!o.consumer_id || o.consumer_id.trim() === '') {
+                   hasRequiredFields = false;
+                }
+
+                if (hasRequiredFields) {
+                   validCount++;
+                   return o;
+                } else {
+                    return null;
+                }
+             } catch (e) {
+                 console.error(`Error processing row ${index + 2}:`, e, r);
+                 return null;
+             }
+        }).filter(r => r !== null);
+
+        console.log(`Processed ${processedCount} rows, ${validCount} valid records kept (required consumer_id and acquisition_date).`);
+        return cleaned;
+    }
+
+
+    function addPurchaseIndex(data) { // (Keep addPurchaseIndex as is)
+      const byId = {};
+      data.forEach(r => {
+        if (!r.consumer_id || !r.acquisition_date) return;
+        byId[r.consumer_id] = byId[r.consumer_id] || [];
+        byId[r.consumer_id].push(r);
+      });
+
+      Object.values(byId).forEach(arr => {
+        arr.sort((a, b) => {
+            const dateDiff = (a.acquisition_date || 0) - (b.acquisition_date || 0);
+            if (dateDiff !== 0) return dateDiff;
+             return (a[OVERALL_UTILIZATION_KEY] || 0) - (b[OVERALL_UTILIZATION_KEY] || 0);
+        });
+        arr.forEach((r, i) => r.purchase_index = i + 1);
+      });
+
+      return [].concat(...Object.values(byId));
+    }
+
+    function aggregateByKey(data, groupKey, valueKey, aggType = 'average') { // (Keep aggregateByKey as is)
+        const groups = {};
+        let unknownCount = 0;
+
+        data.forEach(r => {
+            let key = r[groupKey];
+            if (key === undefined || key === null || String(key).trim() === '') {
+                key = 'Unknown';
+                unknownCount++;
+            } else {
+                key = String(key).trim();
+            }
+
+            const value = r[valueKey];
+             if (typeof value !== 'number' || isNaN(value)) {
+                 return;
+             }
+
+            groups[key] = groups[key] || { sum: 0, count: 0, values: [] };
+            groups[key].sum += value;
+            groups[key].count++;
+            groups[key].values.push(value);
+        });
+
+        if (unknownCount > 0) {
+            // console.log(`Aggregation for '${groupKey}': Found ${unknownCount} records grouped under 'Unknown'.`); // Less verbose logging
+        }
+
+        return Object.entries(groups).map(([name, { sum, count, values }]) => {
+            let finalValue;
+            switch (aggType) {
+                case 'sum': finalValue = sum; break;
+                case 'count': finalValue = count; break;
+                case 'average':
+                default: finalValue = count > 0 ? sum / count : 0; break;
+            }
+            const sorted = values.sort((a, b) => a - b);
+            const median = count > 0 ? sorted[Math.floor(count / 2)] : 0;
+            return { name, value: finalValue, count, median };
+        }).sort((a, b) => {
+             if (groupKey === 'purchase_index' || groupKey === 'vehicle_model_year' || groupKey === 'acquisition_year') {
+                const nA = +a.name;
+                const nB = +b.name;
+                 if (a.name === 'Unknown') return 1;
+                 if (b.name === 'Unknown') return -1;
+                 if (!isNaN(nA) && !isNaN(nB)) return nA - nB;
+             }
+            return a.name.localeCompare(b.name);
+        });
+    }
+
+    // --- Helper function for Histogram ---
+    function createHistogramData(data, valueKey, bucketSize = 10) { // (Keep createHistogramData as is)
+        if (!data || data.length === 0) return [];
+        const values = data.map(item => item[valueKey]).filter(v => typeof v === 'number' && !isNaN(v));
+        if (values.length === 0) return [];
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const adjustedMin = Math.floor(minVal / bucketSize) * bucketSize;
+        const adjustedMax = Math.ceil((maxVal + 0.01) / bucketSize) * bucketSize;
+        const buckets = {};
+        const bucketLabels = [];
+        for (let i = adjustedMin; i < adjustedMax; i += bucketSize) {
+            const bucketName = `${i}-${i + bucketSize}`;
+            buckets[bucketName] = 0;
+            bucketLabels.push(bucketName);
+        }
+        values.forEach(value => {
+            if (value === maxVal && maxVal !== 0 && maxVal % bucketSize === 0) {
+                 const bucketIndex = Math.floor((value - 0.01) / bucketSize);
+                 const bucketName = `${adjustedMin + bucketIndex * bucketSize}-${adjustedMin + (bucketIndex + 1) * bucketSize}`;
+                 if (buckets[bucketName] !== undefined) buckets[bucketName]++;
+            } else {
+                 const lowerBound = adjustedMin + Math.floor((value - adjustedMin) / bucketSize) * bucketSize;
+                 const bucketName = `${lowerBound}-${lowerBound + bucketSize}`;
+                 if (buckets[bucketName] !== undefined) {
+                    buckets[bucketName]++;
+                 } else if (value === adjustedMin) {
+                     const firstBucketName = `${adjustedMin}-${adjustedMin + bucketSize}`;
+                     if(buckets[firstBucketName] !== undefined) buckets[firstBucketName]++;
+                 }
+            }
+        });
+        return bucketLabels.map(name => ({ name, value: buckets[name] }));
+    }
+
+    // --- Helper function for Correlation ---
+    function calculateCorrelation(data, keyX, keyY) { // (Keep calculateCorrelation as is)
+      const validData = data.map(d => ({
+        x: Number(d[keyX]),
+        y: Number(d[keyY])
+      })).filter(d => !isNaN(d.x) && !isNaN(d.y));
+
+      const n = validData.length;
+      if (n < 2) return NaN;
+
+      const sumX = validData.reduce((s, d) => s + d.x, 0);
+      const sumY = validData.reduce((s, d) => s + d.y, 0);
+      const sumXY = validData.reduce((s, d) => s + d.x * d.y, 0);
+      const sumX2 = validData.reduce((s, d) => s + d.x * d.x, 0);
+      const sumY2 = validData.reduce((s, d) => s + d.y * d.y, 0);
+
+      const numerator = n * sumXY - sumX * sumY;
+      const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+      if (denominator === 0) return NaN;
+
+      return numerator / denominator;
+    }
+
+    // Helper to format utilization keys nicely
+    const formatUtilKey = (key) => key // Moved outside App for potential reuse
+      .replace(UTILIZATION_PREFIX, '')
+      .replace(/_at_acq$/i,'')
+      .replace(/_/g,' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+
+
+    // --- Helper Components ---
+    const LoadingSpinner = () => ( // (Keep LoadingSpinner as is)
+        <div className="flex justify-center items-center h-screen">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
+            <p className="ml-4 text-xl font-semibold text-gray-700 dark:text-gray-300">Loading Strategic Insights...</p>
+        </div>
+    );
+
+    const ErrorDisplay = ({ message }) => ( // (Keep ErrorDisplay as is)
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded-lg shadow-md max-w-4xl mx-auto" role="alert">
+            <p className="font-bold text-xl mb-2">Data Analysis Error</p>
+            <p className="mb-1">Could not generate the report. Please check the data source or configuration.</p>
+            <p className="mt-3 text-md font-semibold">Error details:</p>
+            <pre className="mt-1 p-3 bg-red-50 text-sm text-red-800 rounded overflow-x-auto">{message}</pre>
+            <p className="mt-4 text-sm">Common causes include: The CSV file ('{CSV_FILENAME}') not being found at the expected location (ensure it's served by a web server, not accessed via file:///), the file not being a valid comma-separated CSV, or permission issues preventing the file from being loaded. Check the browser's console (F12) for more detailed network or parsing error messages.</p>
+        </div>
+    );
+
+
+    const KPICard = ({ title, value, subtitle, icon, color = 'blue' }) => ( // (Keep KPICard as is)
+        <div className={`kpi-card bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md border-l-4 border-${color}-500 flex flex-col justify-between`}>
+            <div>
+                <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h3>
+                    {icon && <span className={`text-3xl text-${color}-500 opacity-70`}>{icon}</span>}
+                </div>
+                <p className="text-3xl font-bold mt-1">{value}</p>
+            </div>
+            {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{subtitle}</p>}
+        </div>
+    );
+
+    const CustomTooltip = ({ active, payload, label, groupKey }) => { // (Keep CustomTooltip as is)
+      if (active && payload && payload.length) {
+        const dataPoint = payload[0].payload;
+        return (
+          <div className="recharts-default-tooltip">
+            <p className="tooltip-label">{`${groupKey ? groupKey + ': ' : ''}${label}`}</p>
+            {payload.map((entry, index) => (
+              <p key={`item-${index}`} className="recharts-tooltip-item" style={{ color: entry.color }}>
+                {`${entry.name || 'Avg Score'}: ${entry.value.toFixed(1)}`}
+              </p>
+            ))}
+            {dataPoint.count !== undefined && <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">Observations: {dataPoint.count}</p>}
+          </div>
+        );
+      }
+      return null;
+    };
+
+
+    // --- Main Application Component ---
+    function App() {
+        const [data, setData] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const [dark, setDark] = useState(() => { // (Keep dark mode state as is)
+           if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+              return true;
+           }
+           return false;
+        });
+        const [showDataDetails, setShowDataDetails] = useState(false);
+
+        // Effect to apply dark mode class and save preference
+        useEffect(() => { // (Keep dark mode effect as is)
+            if (dark) {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            }
+        }, [dark]);
+
+        // --- Data Fetching Effect ---
+        useEffect(() => { // (Keep data fetching effect as is)
+            const fetchData = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    console.log(`[Data Fetch] Attempting to fetch: ${CSV_FILENAME}`);
+                    const response = await fetch(CSV_FILENAME);
+                    console.log(`[Data Fetch] Response status: ${response.status}`);
+
+                    if (!response.ok) {
+                        let errorTextDetail = `Status: ${response.status} ${response.statusText}.`;
+                        try {
+                            const text = await response.text();
+                            errorTextDetail += ` Response preview (may be HTML error page): ${text.substring(0, 200)}`;
+                        } catch (readError) { /* Ignore */ }
+                        throw new Error(`HTTP error fetching CSV. ${errorTextDetail}`);
+                    }
+
+                    const contentType = response.headers.get("content-type");
+                    console.log(`[Data Fetch] Content-Type: ${contentType}`);
+                    if (contentType && !contentType.includes("csv") && !contentType.includes("text")) {
+                         console.warn(`[Data Fetch] Warning: Content-Type is "${contentType}", expected text/csv. Parsing might fail.`);
+                    }
+
+                    const csvText = await response.text();
+                    console.log("[Data Fetch] Fetched text (first 500 chars):", csvText.substring(0, 500));
+
+                    if (!csvText || csvText.trim().length === 0) {
+                        throw new Error("Data Error: Fetched CSV content is empty.");
+                    }
+                    const trimmedLowerText = csvText.trim().toLowerCase();
+                    if (trimmedLowerText.startsWith("<!doctype html") || trimmedLowerText.startsWith("<html") || trimmedLowerText.includes("<head>") || trimmedLowerText.includes("<body>")) {
+                        throw new Error(`Data Error: Fetched content appears to be HTML, not CSV. Check the file path/URL ('${CSV_FILENAME}') and ensure the server is serving the CSV file correctly.`);
+                    }
+
+                    console.log("[Data Parse] Starting PapaParse...");
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: false,
+                        delimiter: ",",
+                        complete: ({ data: rows, errors, meta }) => {
+                            console.log("[Data Parse] PapaParse completed.");
+                            console.log("[Data Parse] Meta:", meta);
+                            if (errors.length) {
+                                console.error("[Data Parse] CSV Parsing Errors:", errors);
+                                let specificError = errors[0];
+                                setError(`Parsing Error: ${specificError.message} (Code: ${specificError.code}) near row ${specificError.row || 'start'}. Check CSV format (must be comma-separated, properly quoted if fields contain commas/newlines).`);
+                                setLoading(false);
+                            } else if (!rows || rows.length === 0) {
+                                setError("Data Error: CSV parsed successfully, but contained no data rows.");
+                                setLoading(false);
+                            } else {
+                                console.log(`[Data Parse] Parsed ${rows.length} rows.`);
+                                console.log("[Data Process] Starting data cleaning and processing...");
+                                const cleanedData = processAndCleanData(rows);
+                                if (cleanedData.length === 0) {
+                                    setError("Data Error: No valid records remained after cleaning (checked for required fields like consumer_id, acquisition_date). Please review data quality.");
+                                    setLoading(false);
+                                } else {
+                                    console.log(`[Data Process] ${cleanedData.length} valid records after cleaning. Adding purchase index...`);
+                                    setData(addPurchaseIndex(cleanedData));
+                                    console.log("[Data Process] Data ready for analysis.");
+                                    setLoading(false);
+                                }
+                            }
+                        },
+                        error: (err) => {
+                            console.error("[Data Parse] PapaParse General Error:", err);
+                            setError(`CSV Loading/Parsing Failed: ${err.message}. Check file format and encoding.`);
+                            setLoading(false);
+                        }
+                    });
+                } catch (e) {
+                    console.error("[Data Fetch/Process] Error:", e);
+                    setError(e.message || "An unexpected error occurred during data loading or processing.");
+                    setLoading(false);
+                }
+            };
+            fetchData();
+        }, []); // Empty dependency array ensures this runs only once on mount
+
+
+        // --- Memoized Calculations for Performance ---
+        const analysisResults = useMemo(() => { // Keep useMemo structure
+            if (!data) return null;
+            console.log("[Analysis] Recalculating analysis results...");
+
+            // --- Core Metrics ---
+            const avgComposite = data.reduce((s, r) => s + (r[OVERALL_UTILIZATION_KEY] || 0), 0) / data.length;
+            const pctAbove = data.filter(r => (r[OVERALL_UTILIZATION_KEY] || 0) >= avgComposite).length / data.length * 100;
+            const totalRecords = data.length;
+
+            // --- Aggregations ---
+            const aggregatedModels = aggregateByKey(data, 'vehicle_model', OVERALL_UTILIZATION_KEY);
+            const sortedModels = [...aggregatedModels].sort((a, b) => b.value - a.value);
+            const topModel = sortedModels[0]?.name || 'N/A';
+            const topModelScore = sortedModels[0]?.value || 0;
+
+            const dataWithYear = data.map(r => ({
+              ...r,
+              acquisition_year: r.acquisition_date instanceof Date && !isNaN(r.acquisition_date) ? r.acquisition_date.getFullYear() : null
+            })).filter(r => r.acquisition_year !== null);
+
+            const yearlyRaw = aggregateByKey(dataWithYear, 'acquisition_year', OVERALL_UTILIZATION_KEY);
+             const yearlyData = yearlyRaw.map(yearData => {
+                const year = +yearData.name;
+                const yearSubset = data.filter(d => d.acquisition_date?.getFullYear() === year);
+                const yearScores = yearSubset.map(d => d[OVERALL_UTILIZATION_KEY] || 0);
+                yearScores.sort((a,b)=> a-b);
+                const median = yearScores.length > 0 ? yearScores[Math.floor(yearScores.length / 2)] : 0;
+                const aboveAvgCount = yearSubset.filter(d => (d[OVERALL_UTILIZATION_KEY] || 0) >= avgComposite).length;
+                const pctAboveAvg = yearSubset.length > 0 ? (aboveAvgCount / yearSubset.length) * 100 : 0;
+                return { ...yearData, medianScore: median, pctAboveAvg: pctAboveAvg };
+             });
+
+
+            let yoy = null;
+            let latestYearData = null;
+            let prevYearData = null;
+            if (yearlyData.length >= 2) {
+              yearlyData.sort((a,b) => +a.name - +b.name);
+              latestYearData = yearlyData[yearlyData.length - 1];
+              prevYearData = yearlyData[yearlyData.length - 2];
+              if (prevYearData && prevYearData.value !== 0) {
+                 yoy = ((latestYearData.value - prevYearData.value) / prevYearData.value) * 100;
+              }
+            } else if (yearlyData.length === 1) {
+               latestYearData = yearlyData[0];
+            }
+
+             const purchaseData = aggregateByKey(data, 'purchase_index', OVERALL_UTILIZATION_KEY);
+
+            const utilKeys = PROVIDED_SCHEMA
+                .filter(c => c.name.startsWith(UTILIZATION_PREFIX) && c.name !== OVERALL_UTILIZATION_KEY)
+                .map(c => c.name);
+
+            // --- Histogram ---
+            const rawHistogramData = createHistogramData(data, OVERALL_UTILIZATION_KEY, 20); // Increased bucket size
+             let lastNonZeroIndex = rawHistogramData.findLastIndex(bucket => bucket.value > 0);
+             const histogramData = lastNonZeroIndex !== -1
+                 ? rawHistogramData.slice(0, lastNonZeroIndex + 2) // Keep last non-zero + 1 zero bucket
+                 : [];
+
+
+            // --- Component Contribution ---
+            // **** UPDATED componentContributionData calculation ****
+            const componentContributionData = (() => {
+                 const targetSegments = ['BUSINESS', 'INDIVIDUAL'];
+                 const segmentData = {};
+
+                 targetSegments.forEach(segment => {
+                     const filteredData = data.filter(r => r['Consumer_Type_Code_Desc'] === segment);
+                     if (filteredData.length === 0) return;
+
+                     segmentData[segment] = { name: segment }; // Start with name only
+                     let totalAverageScoreForSegment = 0;
+
+                     utilKeys.forEach(key => {
+                         const avg = filteredData.reduce((sum, r) => sum + (r[key] || 0), 0) / filteredData.length;
+                         segmentData[segment][key] = avg; // Store individual component average
+                         totalAverageScoreForSegment += avg; // Sum up component averages
+                     });
+                      // Also add the calculated overall average for this segment for potential tooltip display
+                      const overallAvgSegment = filteredData.reduce((sum, r) => sum + (r[OVERALL_UTILIZATION_KEY] || 0), 0) / filteredData.length;
+                      segmentData[segment]['calculatedOverallAvg'] = overallAvgSegment; // Or use segmentData[segment].totalAvg if preferred
+                 });
+                 return Object.values(segmentData);
+            })(); // Immediately invoke the function
+
+
+            // --- Correlations ---
+            const purchaseIndexCorrelation = calculateCorrelation(data, 'purchase_index', OVERALL_UTILIZATION_KEY);
+            const modelYearCorrelation = calculateCorrelation(data, 'vehicle_model_year', OVERALL_UTILIZATION_KEY);
+
+            // --- Statistics ---
+            const getStats = key => { // (Keep getStats as is)
+                 const vals = data.map(r => r[key]).filter(v => typeof v === 'number' && !isNaN(v));
+                 if (!vals.length) return { count: 0, mean: 0, median: 0, std: 0, min: 0, max: 0, q1: 0, q3: 0 };
+                 const sorted = [...vals].sort((a, b) => a - b);
+                 const sum = vals.reduce((s, x) => s + x, 0);
+                 const mean = sum / vals.length;
+                 const stdDev = Math.sqrt(vals.reduce((s, x) => s + Math.pow(x - mean, 2), 0) / vals.length);
+                 const q1Index = Math.floor(vals.length * .25);
+                 const medianIndex = Math.floor(vals.length / 2);
+                 const q3Index = Math.floor(vals.length * .75);
+                 if (vals.length === 0) return { count: 0, mean: 0, median: 0, std: 0, min: 0, max: 0, q1: 0, q3: 0 };
+                 return { count: vals.length, mean, std: stdDev, min: sorted[0], q1: sorted[q1Index], median: sorted[medianIndex], q3: sorted[q3Index], max: sorted[sorted.length - 1] };
+             };
+
+            console.log(`[Analysis] Completed. Avg: ${avgComposite.toFixed(1)}, Records: ${totalRecords}`);
+
+            return {
+                avgComposite, pctAbove, topModel, topModelScore, yearlyData, yoy, latestYearData, prevYearData, purchaseData, utilKeys, getStats, totalRecords,
+                histogramData,
+                componentContributionData,
+                purchaseIndexCorrelation,
+                modelYearCorrelation
+            };
+        }, [data]); // Recalculate only when data changes
+
+
+        // --- Event Handlers ---
+        const exportCSV = () => { // (Keep exportCSV as is)
+            if (!data) return;
+            try {
+                console.log("[Export] Starting CSV export...");
+                const csv = Papa.unparse(data, { quotes: true, header: true });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "super_duty_utilization_report.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    console.log("[Export] Export successful.");
+                } else {
+                     throw new Error("Browser does not support automatic download.");
+                }
+            } catch (e) {
+                console.error("[Export] CSV Export Failed:", e);
+                setError(`Could not export CSV: ${e.message}`);
+            }
+        };
+
+        // --- Render Logic ---
+        if (loading) return <LoadingSpinner />;
+        if (error) return <div className="container mx-auto p-6 lg:p-10"><ErrorDisplay message={error} /></div>;
+        if (!analysisResults) return <div className="text-center py-20 text-lg font-semibold">Preparing analysis...</div>;
+
+
+        const {
+             avgComposite, pctAbove, topModel, topModelScore, yearlyData, yoy, latestYearData, prevYearData, purchaseData, utilKeys, getStats, totalRecords,
+             histogramData, componentContributionData, purchaseIndexCorrelation, modelYearCorrelation // Destructure new results
+         } = analysisResults;
+        const currentAvgLineColor = dark ? CHART_COLORS.darkAvgLine : CHART_COLORS.avgLine;
+
+
+        // Helper function to get correlation class
+        const getCorrelationClass = (value) => {
+            if (isNaN(value)) return '';
+            if (value > 0.3) return 'correlation-positive';
+            if (value < -0.3) return 'correlation-negative';
+            return 'correlation-neutral';
+        };
+
+        return (
+            <div className="space-y-10">
+                {/* Header & Controls */}
+                <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 no-print">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-100">{REPORT_TITLE}</h1>
+                    <div className="flex gap-2 flex-wrap">
+                        <button onClick={exportCSV} className="btn btn-outline">Export CSV</button>
+                        <button onClick={() => window.print()} className="btn btn-outline">Print Report</button>
+                        <button onClick={() => setShowDataDetails(s => !s)} className="btn btn-outline">
+                            {showDataDetails ? 'Hide' : 'Show'} Data Details
+                        </button>
+                        <button onClick={() => setDark(d => !d)} className="btn btn-secondary" aria-label={`Switch to ${dark ? 'Light' : 'Dark'} Mode`}>
+                           {dark ? '☀️ Light' : '🌙 Dark'} Mode
+                        </button>
+                    </div>
+                </header>
+
+                {/* Executive Summary & KPIs */}
+                 <section className="grid grid-cols-1 md:grid-cols-5 gap-6 lg:gap-8">
+                    <div className="md:col-span-3 bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 rounded-lg shadow-lg">
+                        <h2 className="text-2xl font-bold mb-4 border-b border-blue-400 pb-2">Executive Summary</h2>
+                        {totalRecords > 0 ? (
+                            <Fragment>
+                                <ul className="list-disc pl-5 space-y-2 text-blue-100 mb-4">
+                                    <li>Overall utilization averages <strong>{avgComposite.toFixed(1)}</strong> at time of acquisition, with <strong>{pctAbove.toFixed(1)}%</strong> of customers exceeding this benchmark.</li>
+                                    <li><strong>"BOTH"</strong> consumer segment shows significantly higher engagement (e.g., in Ownership scores) compared to "PRO".</li>
+                                    <li><strong>Business ("PRO")</strong> customers demonstrate stronger utilization of service-related features (Drive & Service).</li>
+                                    <li>Utilization trends <strong>upward</strong> with increased vehicle mileage and <strong>newer model years</strong>, suggesting engagement grows over the ownership lifecycle and with modern features.</li>
+                                    <li><strong>Repeat purchases</strong> weakly correlate with higher utilization scores, indicating loyalty could be linked to deeper product engagement. Potential for {'>'}100 scores among power users.</li>
+                                    <li>Year-over-year ({latestYearData?.name || 'N/A'}), the average score shows a {yoy !== null ? (yoy >= 0 ? <span className="text-green-300 font-bold"> {`+${yoy.toFixed(1)}% increase`}</span> : <span className="text-red-300 font-bold"> {`${yoy.toFixed(1)}% decrease`}</span>) : <span className="text-yellow-300 font-semibold"> Trend N/A</span>} {prevYearData ? `(vs ${prevYearData.name})` : '(Insufficient historical data)'}.</li>
+                                </ul>
+                                {/* Correlations Summary */}
+                                <div className="mt-4 pt-3 border-t border-blue-500 text-sm">
+                                    <h4 className="font-semibold mb-1 text-blue-200">Key Correlations:</h4>
+                                    <div className="flex flex-col gap-1">
+                                        <span>Purchase Sequence vs. Overall Score:
+                                          <span className={`correlation-value ${getCorrelationClass(purchaseIndexCorrelation)}`}>
+                                            {isNaN(purchaseIndexCorrelation) ? 'N/A' : purchaseIndexCorrelation.toFixed(2)}
+                                          </span>
+                                        </span>
+                                        <span>Model Year vs. Overall Score:
+                                          <span className={`correlation-value ${getCorrelationClass(modelYearCorrelation)}`}>
+                                             {isNaN(modelYearCorrelation) ? 'N/A' : modelYearCorrelation.toFixed(2)}
+                                          </span>
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-blue-300 mt-1">(Pearson correlation coefficient; range -1 to +1)</p>
+                                </div>
+                             </Fragment>
+                        ) : (
+                            <p className="text-yellow-200">No valid data found to generate summary statistics.</p>
+                        )}
+                    </div>
+                    <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                       {totalRecords > 0 ? (
+                            <>
+                                <KPICard title="Avg. Utilization" value={avgComposite.toFixed(1)} subtitle={`Based on ${totalRecords} records`} icon="📊" color="blue" />
+                                <KPICard title="% Above Average" value={`${pctAbove.toFixed(1)}%`} subtitle="Customers exceeding the average score" icon="📈" color="green" />
+                                <KPICard title="Top Model (Avg Score)" value={topModel} subtitle={topModel !== 'N/A' ? `Score: ${topModelScore.toFixed(1)}` : 'N/A'} icon="⭐" color="amber" />
+                                <KPICard
+                                    title={`YoY Change (${latestYearData?.name || 'N/A'})`}
+                                    value={yoy !== null ? `${yoy >= 0 ? '+' : ''}${yoy.toFixed(1)}%` : 'N/A'}
+                                    subtitle={latestYearData ? `vs ${prevYearData?.name || 'Prev Year'}` : 'Insufficient data'}
+                                    icon={yoy === null ? '⏳' : (yoy >= 0 ? '⬆️' : '⬇️')}
+                                    color={yoy === null ? 'gray' : (yoy >= 0 ? 'green' : 'red')}
+                                />
+                            </>
+                         ) : (
+                             <div className="sm:col-span-2 flex items-center justify-center bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md text-gray-500 dark:text-gray-400">
+                                 No data for KPIs.
+                             </div>
+                         )}
+                    </div>
+                </section>
+
+                {/* --- Utilization Score Distribution --- */}
+                <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                     <h2 className="section-title section-title-purple text-gray-800 dark:text-gray-100">Overall Utilization Score Distribution</h2>
+                     {histogramData && histogramData.length > 0 ? (
+                        <Fragment>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart
+                                    data={histogramData} /* Using filtered data */
+                                    margin={{ top: 5, right: 30, left: 20, bottom: 50 }} /* Increased bottom margin */
+                                    barCategoryGap="10%"
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563" : "#e0e0e0"} opacity={0.5} />
+                                    <XAxis
+                                        dataKey="name"
+                                        tick={{ fontSize: 10 }}
+                                        angle={-45} /* Increased angle further */
+                                        textAnchor="end"
+                                        height={60} /* Adjusted height */
+                                        interval="auto" /* Let Recharts decide interval */
+                                        label={{ value: 'Score Range', position: 'insideBottom', offset: -25, dy:10, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}
+                                    />
+                                    <YAxis
+                                        allowDecimals={false}
+                                        tick={{ fontSize: 10 }}
+                                        width={45}
+                                        label={{ value: 'Number of Customers', angle: -90, position: 'insideLeft', offset: -10, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}
+                                    />
+                                     <Tooltip
+                                         cursor={{ fill: 'rgba(180, 180, 180, 0.1)' }}
+                                         content={({ active, payload, label }) => {
+                                             if (active && payload && payload.length) {
+                                                 return (
+                                                     <div className="recharts-default-tooltip">
+                                                         <p className="tooltip-label">{`Score Range: ${label}`}</p>
+                                                         <p className="recharts-tooltip-item" style={{ color: CHART_COLORS.primary }}>
+                                                             {`Customers: ${payload[0].value}`}
+                                                         </p>
+                                                     </div>
+                                                 );
+                                             }
+                                             return null;
+                                         }}
+                                     />
+                                    <Bar dataKey="value" name="Customers" fill={CHART_COLORS.primary} />
+                                     {/* Add average line using ReferenceArea */}
+                                     {typeof avgComposite === 'number' && !isNaN(avgComposite) && (
+                                         (() => {
+                                            const avgBucketIndex = histogramData.findIndex(bucket => {
+                                                const [min, max] = bucket.name.split('-').map(Number);
+                                                return avgComposite >= min && avgComposite < max;
+                                            });
+                                            if (avgBucketIndex !== -1) {
+                                                return (
+                                                  <ReferenceArea
+                                                    x1={avgBucketIndex - 0.4}
+                                                    x2={avgBucketIndex + 0.4}
+                                                    stroke={CHART_COLORS.accent}
+                                                    strokeOpacity={0.6}
+                                                    fill={CHART_COLORS.accent}
+                                                    fillOpacity={0.1}
+                                                    label={{
+                                                      position: 'insideTop',
+                                                      value: `Avg: ${avgComposite.toFixed(1)}`,
+                                                      fontSize: 9,
+                                                      fill: CHART_COLORS.accent,
+                                                      offset: 5
+                                                    }}
+                                                    ifOverflow="visible"
+                                                  />
+                                                );
+                                            }
+                                            return null;
+                                          })()
+                                     )}
+
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Shows the number of customers within specific overall utilization score ranges (bucket size: 20). Tail may be truncated for readability.
+                            </p>
+                         </Fragment>
+                     ) : (
+                        <p className="text-center text-gray-500 dark:text-gray-400">Insufficient data to generate score distribution histogram.</p>
+                     )}
+                </section>
+
+                 {/* --- NEW SECTION: Component Contribution --- */}
+                 <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h2 className="section-title section-title-teal text-gray-800 dark:text-gray-100">Score Component Contribution by Consumer Type</h2>
+                     {componentContributionData && componentContributionData.length > 0 ? (
+                        <Fragment>
+                            <ResponsiveContainer width="100%" height={400}>
+                                <BarChart
+                                    data={componentContributionData}
+                                    layout="vertical"
+                                    margin={{ top: 5, right: 30, left: 100, bottom: 60 }} // Increased bottom margin for legend
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563" : "#e0e0e0"} opacity={0.5} />
+                                    <XAxis type="number" tick={{ fontSize: 10 }} label={{ value: 'Average Score Contribution', position: 'insideBottom', offset: -10, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}/>
+                                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
+                                    <Tooltip
+                                         cursor={{ fill: 'rgba(180, 180, 180, 0.1)' }}
+                                         content={({ active, payload, label }) => {
+                                              if (active && payload && payload.length) {
+                                                const totalAvg = payload.reduce((sum, entry) => sum + entry.value, 0);
+                                                return (
+                                                  <div className="recharts-default-tooltip max-w-xs">
+                                                    <p className="tooltip-label">{`${label}`}</p>
+                                                    {payload.slice().reverse().map((entry, index) => (
+                                                      <p key={`item-${index}`} className="recharts-tooltip-item !block" style={{ color: entry.fill }}>
+                                                        {`${formatUtilKey(entry.dataKey)}: ${entry.value.toFixed(1)} (${((entry.value / totalAvg) * 100).toFixed(0)}%)`}
+                                                      </p>
+                                                    ))}
+                                                     <p className="text-xs font-semibold mt-2 pt-1 border-t border-gray-300 dark:border-gray-600">Total Avg: {totalAvg.toFixed(1)}</p>
+                                                  </div>
+                                                );
+                                              }
+                                              return null;
+                                          }}
+                                    />
+                                    <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '15px', paddingBottom:'20px', fontSize: '10px', lineHeight: '1.2' }} formatter={(value) => formatUtilKey(value)}/>
+                                    {utilKeys.map((key, index) => (
+                                        <Bar
+                                            key={key}
+                                            dataKey={key}
+                                            stackId="a"
+                                            fill={CHART_COLORS.componentPalette[index % CHART_COLORS.componentPalette.length]}
+                                            name={formatUtilKey(key)}
+                                        />
+                                    ))}
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                Shows the average contribution of each utilization score component to the total average score for key consumer types.
+                            </p>
+                         </Fragment>
+                     ) : (
+                        <p className="text-center text-gray-500 dark:text-gray-400">Insufficient data for component contribution analysis (needs BUSINESS and INDIVIDUAL types).</p>
+                     )}
+                </section>
+                {/* --- END NEW SECTION --- */}
+
+
+                {/* Segmentation Analysis */}
+                <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+                    <h2 className="section-title section-title-blue text-gray-800 dark:text-gray-100">Customer Segment Performance</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-10 mb-8">
+                         <div>
+                             <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">Utilization by Acquisition Source</h3>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {[OVERALL_UTILIZATION_KEY, ...utilKeys].map(k => (
+                                    <div className="border dark:border-gray-700 rounded p-2 chart-container" key={k}>
+                                        <h4 className="text-center text-xs font-medium mb-1 text-gray-600 dark:text-gray-400 h-8 flex items-center justify-center">
+                                           {formatUtilKey(k)}
+                                        </h4>
+                                        <ResponsiveContainer width="100%" height={160}>
+                                            <BarChart data={aggregateByKey(data, 'source_label', k)} margin={{ top: 5, right: 5, bottom: 5, left: -25 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563" : "#e0e0e0"} opacity={0.5}/>
+                                                <XAxis dataKey="name" tick={{fontSize: 9}} interval={0} angle={-45} textAnchor="end" height={40}/>
+                                                <YAxis tick={{fontSize: 9}} domain={['auto', 'auto']} width={35}/>
+                                                <Tooltip content={<CustomTooltip groupKey="Source"/>} cursor={{ fill: 'rgba(180, 180, 180, 0.1)' }}/>
+                                                <Bar dataKey="value" name="Avg Score" fill={CHART_COLORS.sourceLabel}/>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                ))}
+                            </div>
+                         </div>
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">Utilization by Consumer Type</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {[OVERALL_UTILIZATION_KEY, ...utilKeys].map(k => (
+                                    <div className="border dark:border-gray-700 rounded p-2 chart-container" key={k}>
+                                       <h4 className="text-center text-xs font-medium mb-1 text-gray-600 dark:text-gray-400 h-8 flex items-center justify-center">
+                                          {formatUtilKey(k)}
+                                        </h4>
+                                        <ResponsiveContainer width="100%" height={160}>
+                                            <BarChart data={aggregateByKey(data, 'Consumer_Type_Code_Desc', k)} margin={{ top: 5, right: 5, bottom: 5, left: -25 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563" : "#e0e0e0"} opacity={0.5}/>
+                                                <XAxis dataKey="name" tick={{fontSize: 9}} interval={0} angle={-45} textAnchor="end" height={40} />
+                                                <YAxis tick={{fontSize: 9}} domain={['auto', 'auto']} width={35}/>
+                                                <Tooltip content={<CustomTooltip groupKey="Type"/>} cursor={{ fill: 'rgba(180, 180, 180, 0.1)' }}/>
+                                                <Bar dataKey="value" name="Avg Score" fill={CHART_COLORS.consumerType}/>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                     <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300 pt-4 border-t dark:border-gray-700">Vehicle Characteristics & Utilization</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                         <div className="chart-container">
+                            <h4 className="font-medium mb-2 text-center text-gray-600 dark:text-gray-400">Overall Score by Mileage Group</h4>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={aggregateByKey(data, 'mileage_group2', OVERALL_UTILIZATION_KEY)}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563":"#e0e0e0"} opacity={0.5}/>
+                                    <XAxis dataKey="name" angle={-25} textAnchor="end" height={40} tick={{fontSize: 10}} interval={0} />
+                                    <YAxis tick={{fontSize: 10}} domain={['auto', 'auto']} width={35}/>
+                                    <Tooltip content={<CustomTooltip groupKey="Mileage"/>} cursor={{ stroke: CHART_COLORS.mileage, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                    <Line type="monotone" dataKey="value" name="Avg Score" stroke={CHART_COLORS.mileage} strokeWidth={2} dot={false} activeDot={{r: 5}}/>
+                                </LineChart>
+                            </ResponsiveContainer>
+                         </div>
+                         <div className="chart-container">
+                            <h4 className="font-medium mb-2 text-center text-gray-600 dark:text-gray-400">Overall Score by Model Year</h4>
+                             <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={aggregateByKey(data, 'vehicle_model_year', OVERALL_UTILIZATION_KEY).sort((a,b) => +a.name - +b.name)}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563":"#e0e0e0"} opacity={0.5}/>
+                                    <XAxis dataKey="name" tick={{fontSize: 10}} interval="preserveStartEnd" />
+                                    <YAxis tick={{fontSize: 10}} domain={['auto', 'auto']} width={35}/>
+                                    <Tooltip content={<CustomTooltip groupKey="Model Year"/>} cursor={{ stroke: CHART_COLORS.modelYear, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                    <Line type="monotone" dataKey="value" name="Avg Score" stroke={CHART_COLORS.modelYear} strokeWidth={2} dot={false} activeDot={{r: 5}}/>
+                                </LineChart>
+                            </ResponsiveContainer>
+                         </div>
+                         <div className="chart-container">
+                            <h4 className="font-medium mb-2 text-center text-gray-600 dark:text-gray-400">Top 5 Models by Avg Score</h4>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart layout="vertical"
+                                  data={aggregateByKey(data, 'vehicle_model', OVERALL_UTILIZATION_KEY).sort((a,b)=>b.value-a.value).slice(0,5)}
+                                  margin={{ top: 5, right: 20, bottom: 5, left: 60 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563":"#e0e0e0"} opacity={0.5}/>
+                                    <XAxis type="number" tick={{fontSize: 10}} domain={['auto', 'auto']}/>
+                                    <YAxis type="category" dataKey="name" width={80} tick={{fontSize: 9, width: 75, textAnchor: 'end' }} interval={0}/>
+                                    <Tooltip content={<CustomTooltip groupKey="Model"/>} cursor={{ fill: 'rgba(180, 180, 180, 0.1)' }}/>
+                                    <Bar dataKey="value" name="Avg Score" fill={CHART_COLORS.topModels}/>
+                                </BarChart>
+                            </ResponsiveContainer>
+                         </div>
+                    </div>
+                </section>
+
+                {/* Temporal & Lifecycle Analysis - STACKED LAYOUT */}
+                <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow print-section-break">
+                    <h2 className="section-title section-title-green text-gray-800 dark:text-gray-100">Lifecycle & Trend Analysis</h2>
+                    <div className="grid grid-cols-1 gap-12"> {/* Stacked layout */}
+                        {/* Purchase Sequence Chart */}
+                        <div className="chart-container">
+                            <h3 className="text-lg font-semibold mb-3 text-center text-gray-700 dark:text-gray-300">Utilization by Purchase Sequence</h3>
+                            <ResponsiveContainer width="100%" height={350}>
+                                <LineChart data={purchaseData} margin={{ top: 10, right: 50, bottom: 30, left: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563":"#e0e0e0"} opacity={0.5}/>
+                                    <XAxis dataKey="name" type="number" domain={['dataMin', 'dataMax']} allowDecimals={false}
+                                        label={{ value: 'Purchase Number', position: 'insideBottom', offset: -15, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}
+                                        tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                                    <YAxis domain={[min => Math.floor(min * 0.9), max => Math.ceil(max * 1.1)]} tickFormatter={v => v.toFixed(0)}
+                                        label={{ value: 'Avg Score', angle: -90, position: 'insideLeft', offset: -5, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}
+                                        tick={{ fontSize: 11 }} width={40}/>
+                                    <Tooltip content={<CustomTooltip groupKey="Purchase #"/>} cursor={{ stroke: CHART_COLORS.purchaseIndex, strokeWidth: 1, strokeDasharray: '3 3' }}/>
+                                    <Line type="monotone" dataKey="value" name="Avg Score" stroke={CHART_COLORS.purchaseIndex} strokeWidth={2.5} dot={{ r: 4, fill: CHART_COLORS.purchaseIndex }} activeDot={{ r: 6 }}/>
+                                    {typeof avgComposite === 'number' && !isNaN(avgComposite) && (
+                                      <ReferenceLine y={avgComposite} stroke={currentAvgLineColor} strokeWidth={1.5} strokeDasharray="5 5" label={{ position: 'right', value: `Avg (${avgComposite.toFixed(1)})`, fontSize: 10, fill: currentAvgLineColor }}/>
+                                    )}
+                                </LineChart>
+                            </ResponsiveContainer>
+                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">Shows how utilization changes as customers make repeat purchases.</p>
+                        </div>
+
+                        {/* Acquisition Year Chart */}
+                        <div className="chart-container">
+                            <h3 className="text-lg font-semibold mb-3 text-center text-gray-700 dark:text-gray-300">Utilization Trend by Acquisition Year</h3>
+                            <ResponsiveContainer width="100%" height={350}>
+                                <LineChart data={yearlyData.sort((a,b) => +a.name - +b.name)} margin={{ top: 10, right: 50, bottom: 30, left: 10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#4B5563":"#e0e0e0"} opacity={0.5}/>
+                                    <XAxis dataKey="name" type="category"
+                                        tick={{ fontSize: 11, angle: -30, textAnchor: 'end' }} interval="preserveStartEnd" height={40}
+                                        label={{ value: 'Acquisition Year', position: 'insideBottom', offset: -15, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}/>
+                                    <YAxis yAxisId="left" domain={['auto', 'auto']} tickFormatter={v => v.toFixed(0)}
+                                        label={{ value: 'Avg/Median Score', angle: -90, position: 'insideLeft', offset: -5, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}
+                                        tick={{ fontSize: 10 }} width={45}/>
+                                     <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tickFormatter={v => `${v.toFixed(0)}%`}
+                                        label={{ value: '% Above Avg', angle: 90, position: 'insideRight', offset: -5, fontSize: 12, fill: dark ? '#D1D5DB' : '#4B5563' }}
+                                        tick={{ fontSize: 10 }} width={45}/>
+                                    <Tooltip content={<CustomTooltip groupKey="Year"/>}/>
+                                    <Legend verticalAlign="top" height={36}/>
+                                    <Line yAxisId="left" type="monotone" dataKey="value" name="Avg Score" stroke={CHART_COLORS.calendarYear} strokeWidth={2.5} dot={false} activeDot={{ r: 6 }}/>
+                                    <Line yAxisId="left" type="monotone" dataKey="medianScore" name="Median Score" stroke={CHART_COLORS.accent} strokeWidth={1.5} strokeDasharray="5 5" dot={false} activeDot={{ r: 5 }}/>
+                                    <Line yAxisId="right" type="monotone" dataKey="pctAboveAvg" name="% Above Overall Avg" stroke={CHART_COLORS.secondary} strokeWidth={1.5} strokeDasharray="3 3" dot={false} activeDot={{ r: 5 }}/>
+
+                                </LineChart>
+                            </ResponsiveContainer>
+                            <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">Illustrates key utilization score trends over time.</p>
+                        </div>
+                    </div>
+                </section>
+
+                 {/* Actionable Insights */}
+                <section className="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-6 rounded-lg shadow-lg print-section-break">
+                    <h2 className="section-title section-title-green text-2xl font-bold mb-4 border-b border-green-300 pb-2" style={{borderColor: '#6EE7B7'}}>Strategic Recommendations</h2>
+                    <ul className="list-none space-y-3">
+                        <li className="flex items-start">
+                            <span className="text-xl mr-3 mt-1">🎯</span>
+                            <div><strong className="block text-lg">Target "BOTH" Segment for Ownership Engagement:</strong> Capitalize on the higher Ownership scores observed in the "BOTH" segment. Deploy targeted campaigns promoting advanced ownership features, rewards programs, and connected services to further deepen engagement and loyalty.</div>
+                        </li>
+                         <li className="flex items-start">
+                            <span className="text-xl mr-3 mt-1">🛠️</span>
+                            <div><strong className="block text-lg">Enhance Service Offerings for "PRO" Customers:</strong> Leverage the higher engagement of Business ("PRO") customers with "Drive & Service" features. Introduce specialized fleet management tools, priority service scheduling, or tailored maintenance packages to increase value and stickiness for this crucial segment.</div>
+                        </li>
+                        <li className="flex items-start">
+                            <span className="text-xl mr-3 mt-1">📈</span>
+                             <div><strong className="block text-lg">Leverage Mileage & Model Year Trends:</strong> Recognize that utilization increases with mileage and newer models. Develop lifecycle marketing that introduces relevant features as mileage milestones are reached. Emphasize advanced features during the sales process for new models to accelerate high utilization from the start. (Correl: <span className={`correlation-value ${getCorrelationClass(modelYearCorrelation)}`}>{isNaN(modelYearCorrelation) ? 'N/A' : modelYearCorrelation.toFixed(2)}</span>)</div>
+                        </li>
+
+                            <li className="flex items-start">
+    <span className="text-xl mr-3 mt-1">🔬</span>
+    <div><strong className="block text-lg">Investigate Repeat Purchase Dynamics:</strong> The correlation between purchase sequence and *overall* utilization score is weak in this period (Correl: 0.04). Further analysis is recommended to determine if *specific feature categories* (e.g., Service, Rewards) show stronger utilization trends among repeat buyers, which could guide targeted loyalty initiatives.</div>
+</li>                        
+                        <li className="flex items-start">
+                           <span className="text-xl mr-3 mt-1">💡</span>
+                           <div><strong className="block text-lg">Identify & Nurture Power Users:</strong> The score distribution reveals a segment of highly engaged users. Identify these customers (likely concentrated in "BOTH", high repeat purchasers, or specific models) and explore opportunities for advocacy programs, beta testing new features, or gathering in-depth feedback for future product development.</div>
+                       </li>
+                        <li className="flex items-start">
+                            <span className="text-xl mr-3 mt-1">📊</span>
+                            <div><strong className="block text-lg">Analyze Component Drivers:</strong> Examine the 'Score Component Contribution' chart to understand *which specific features* drive higher scores for different segments (e.g., INDIVIDUAL vs. BUSINESS). Tailor feature promotion and onboarding based on these drivers.</div>
+                        </li>
+                    </ul>
+                </section>
+
+                {/* Data Details Appendix */}
+                {showDataDetails && ( // (Keep Appendix section as is)
+                    <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow mt-8 border border-gray-200 dark:border-gray-700 print-section-break">
+                        <h2 className="text-xl font-bold mb-4 text-gray-700 dark:text-gray-200">Data Details Appendix</h2>
+                        <div className="mb-8">
+                            <h3 className="text-lg font-semibold mb-3 text-gray-600 dark:text-gray-300">Descriptive Statistics (Utilization Scores)</h3>
+                            <div className="overflow-x-auto border dark:border-gray-700 rounded">
+                                <table className="w-full text-sm text-left text-gray-700 dark:text-gray-300 min-w-[800px]">
+                                    <thead className="bg-gray-200 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-400 uppercase">
+                                        <tr>
+                                            <th className="px-3 py-2">Metric</th>
+                                            <th className="px-3 py-2">Overall Score</th>
+                                            {utilKeys.map(k => <th key={k} className="px-3 py-2 whitespace-nowrap">{formatUtilKey(k)}</th>)}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {['count', 'mean', 'std', 'min', 'q1', 'median', 'q3', 'max'].map(m => (
+                                            <tr key={m} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <td className="px-3 py-2 font-semibold uppercase">{m === 'median' ? 'MEDIAN (Q2)' : m.toUpperCase()}</td>
+                                                {[OVERALL_UTILIZATION_KEY, ...utilKeys].map(k => {
+                                                    const stats = getStats(k);
+                                                    const value = stats[m];
+                                                    return <td key={k} className="px-3 py-2">{value !== undefined && value !== null ? value.toFixed(2) : '-'}</td>;
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                            <div className="md:col-span-3">
+                                <h3 className="text-lg font-semibold mb-3 text-gray-600 dark:text-gray-300">Raw Data Sample (First 5 Rows)</h3>
+                                <div className="overflow-x-auto border dark:border-gray-700 rounded max-h-80">
+                                    <table className="w-full text-xs text-left text-gray-600 dark:text-gray-300">
+                                        <thead className="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase">
+                                            <tr>{PROVIDED_SCHEMA.map(c => <th key={c.name} className="px-3 py-2 font-medium whitespace-nowrap">{c.name.replace(/_/g, ' ')}</th>)}</tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                            {data && data.slice(0, 5).map((r, i) => (
+                                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                    {PROVIDED_SCHEMA.map(c => {
+                                                      let displayValue = r[c.name];
+                                                        if (displayValue instanceof Date) {
+                                                            displayValue = displayValue.toLocaleDateString();
+                                                        } else if (displayValue === null || displayValue === undefined || displayValue === '') {
+                                                            displayValue = <span className="text-gray-400 italic">N/A</span>;
+                                                        } else {
+                                                            displayValue = String(displayValue);
+                                                        }
+                                                      return <td key={c.name} className="px-3 py-2 whitespace-nowrap">{displayValue}</td>
+                                                    })}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <h3 className="text-lg font-semibold mb-3 text-gray-600 dark:text-gray-300">Data Schema & Missing Values</h3>
+                                <div className="overflow-auto max-h-80 border dark:border-gray-700 rounded">
+                                    <table className="w-full text-xs text-left text-gray-600 dark:text-gray-300">
+                                        <thead className="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase">
+                                            <tr>
+                                                <th className="px-3 py-2 font-medium">Column Name</th>
+                                                <th className="px-3 py-2 font-medium">Data Type</th>
+                                                <th className="px-3 py-2 font-medium text-right">Missing</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                            {PROVIDED_SCHEMA.map(c => {
+                                                const missingCount = data ? data.filter(r => r[c.name] === '' || r[c.name] === null || r[c.name] === undefined).length : 0;
+                                                const missingPercent = totalRecords > 0 ? ((missingCount / totalRecords) * 100).toFixed(1) : 0;
+                                                return (
+                                                    <tr key={c.name} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                        <td className="px-3 py-2 font-mono text-xs">{c.name}</td>
+                                                        <td className="px-3 py-2">{c.type}</td>
+                                                        <td className={`px-3 py-2 text-right ${missingCount > 0 ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-gray-400'}`}>
+                                                            {missingCount > 0 ? `${missingCount} (${missingPercent}%)` : `0 (0.0%)`}
+                                                         </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* Footer */}
+                <footer className="text-center text-xs text-gray-500 dark:text-gray-400 mt-10 pt-5 border-t dark:border-gray-700 no-print">
+                    {REPORT_TITLE} | Generated: {new Date().toLocaleString()} | Data processed client-side from {CSV_FILENAME}.
+                    <br /> Confidential - For Internal Strategic Use Only.
+                </footer>
+            </div>
+        );
+    }
+
+    // --- Mount React App ---
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<React.StrictMode><App /></React.StrictMode>);
+
+  </script>
+</body>
+</html>
