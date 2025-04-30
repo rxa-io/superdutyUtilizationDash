@@ -602,7 +602,7 @@
                 .map(c => c.name);
 
             // --- Histogram ---
-            const rawHistogramData = createHistogramData(data, OVERALL_UTILIZATION_KEY, 20); // Increased bucket size
+            const rawHistogramData = createHistogramData(data, OVERALL_UTILIZATION_KEY, 30); // Increased bucket size
              let lastNonZeroIndex = rawHistogramData.findLastIndex(bucket => bucket.value > 0);
              const histogramData = lastNonZeroIndex !== -1
                  ? rawHistogramData.slice(0, lastNonZeroIndex + 2) // Keep last non-zero + 1 zero bucket
